@@ -1,236 +1,2397 @@
-<!DOCTYPE html>  <html lang="en">  
-<head>  
-<meta charset="UTF-8">  
-<title>Web Quiz Game - Hacker Edition</title>  
-<style>  
-@import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap');  body {
-font-family: 'Roboto Mono', monospace;
-margin:0; padding:0;
-background:#000;
-color:#0f0;
-overflow:hidden;
-}
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CyberNet Terminal // Web Quiz Game (Hacker Edition v2.0)</title>
+  
+  <!-- Modern Futuristic Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800;900&family=Roboto+Mono:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 
-#matrix {
-position:fixed; top:0; left:0; width:100%; height:100%; z-index:-1;
-background:#000;
-}
+  <style>
+    :root {
+      --bg-dark: #030806;
+      --bg-card: rgba(4, 18, 12, 0.88);
+      --neon-green: #00ff66;
+      --neon-green-glow: rgba(0, 255, 102, 0.45);
+      --neon-cyan: #00f3ff;
+      --neon-cyan-glow: rgba(0, 243, 255, 0.4);
+      --neon-red: #ff0055;
+      --neon-red-glow: rgba(255, 0, 85, 0.5);
+      --neon-amber: #ffb700;
+      --text-dim: #739f84;
+      --border-color: rgba(0, 255, 102, 0.25);
+      --font-display: 'Orbitron', sans-serif;
+      --font-mono: 'Roboto Mono', 'Share Tech Mono', monospace;
+    }
 
-canvas { display:block; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
 
-.screen {
-display:none;
-flex-direction:column;
-justify-content:center;
-align-items:center;
-height:100vh;
-padding:20px;
-text-align:center;
-transition: all 0.5s ease;
-}
+    body {
+      font-family: var(--font-mono);
+      background-color: var(--bg-dark);
+      color: var(--neon-green);
+      min-height: 100vh;
+      overflow-x: hidden;
+      overflow-y: auto;
+      position: relative;
+    }
 
-.loader {
-border: 8px solid rgba(0,255,0,0.3);
-border-top: 8px solid #0f0;
-border-radius:50%;
-width:60px; height:60px;
-animation:spin 1s linear infinite;
-margin-top:20px;
-}
-@keyframes spin { 0%{transform:rotate(0deg);}100%{transform:rotate(360deg);} }
+    /* Background Matrix Canvas */
+    #matrix {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;
+      opacity: 0.9;
+    }
 
-button {
-margin:10px;
-padding:12px 25px;
-font-size:18px;
-cursor:pointer;
-border-radius:5px;
-border:none;
-background: rgba(0,255,0,0.1);
-color:#0f0;
-transition: all 0.3s ease;
-box-shadow: 0 0 5px #0f0;
-}
-button:hover {
-background: rgba(0,255,0,0.3);
-transform: scale(1.05);
-box-shadow: 0 0 15px #0f0, 0 0 25px #0f0;
-}
+    /* CRT Scanline & Vignette Effect (Layered on top of cards for authentic monitor raster) */
+    .crt-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 30;
+      pointer-events: none;
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.28) 50%),
+                  radial-gradient(circle at center, transparent 65%, rgba(0, 0, 0, 0.75) 100%);
+      background-size: 100% 3px, 100% 100%;
+      transition: opacity 0.3s ease;
+    }
 
-.option {
-display:block;
-margin:15px auto;
-padding:12px 20px;
-cursor:pointer;
-background: rgba(0,255,0,0.1);
-border-radius:5px;
-width:70%;
-font-size:16px;
-transition: all 0.3s ease;
-box-shadow: 0 0 5px #0f0;
-}
-.option:hover {
-background: rgba(0,255,0,0.3);
-transform: scale(1.03);
-box-shadow: 0 0 15px #0f0, 0 0 25px #0f0;
-}
+    .crt-off .crt-overlay {
+      display: none;
+    }
 
-#questionCard {
-background: rgba(0,0,0,0.7);
-padding:30px;
-border-radius:12px;
-box-shadow: 0 0 20px #0f0;
-max-width:600px;
-width:90%;
-min-height:200px;
-text-align:left;
-}
+    /* Top Global HUD Bar */
+    .hud-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 52px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 24px;
+      background: rgba(3, 12, 8, 0.85);
+      border-bottom: 1px solid var(--border-color);
+      backdrop-filter: blur(8px);
+      z-index: 20;
+    }
 
-h2,h3,p { margin:10px 0; color:#0f0; }
+    .hud-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--font-display);
+      font-size: 13px;
+      letter-spacing: 1.5px;
+      color: var(--neon-cyan);
+      text-shadow: 0 0 8px var(--neon-cyan-glow);
+    }
 
-@keyframes typing {
-from { width: 0; }
-to { width: 100%; }
-}
+    .hud-status-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--neon-green);
+      border-radius: 50%;
+      box-shadow: 0 0 10px var(--neon-green);
+      animation: pulseDot 1.5s infinite alternate;
+    }
 
-.typing {
-overflow: hidden;
-white-space: nowrap;
-border-right: 2px solid #0f0;
-animation: typing 0.5s steps(30,end) forwards;
-}
+    @keyframes pulseDot {
+      0% { opacity: 0.4; transform: scale(0.9); }
+      100% { opacity: 1; transform: scale(1.15); box-shadow: 0 0 14px var(--neon-green); }
+    }
 
-#score {
-font-weight:bold;
-text-shadow: 0 0 5px #0f0,0 0 10px #0f0;
-transition: all 0.3s ease;
-}
-</style>
+    .hud-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
 
-</head>  
-<body>  <canvas id="matrix"></canvas>
+    .hud-btn {
+      background: rgba(0, 255, 102, 0.08);
+      border: 1px solid var(--border-color);
+      color: var(--neon-green);
+      padding: 6px 12px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 1px;
+      border-radius: 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
 
-<div id="loadingScreen" class="screen" style="display:flex;">  
-  <h1>Initializing Quiz...</h1>  
-  <div class="loader"></div>  
-</div>  <div id="homeScreen" class="screen">  
-  <h1>QUIZ WEB STUDENT</h1>  
-  <button onclick="startQuiz()">Start Quiz</button>  
-  <button onclick="showInstructions()">Instructions</button>  
-</div>  <div id="quizScreen" class="screen">  
-  <div id="questionCard">  
-    <h2>Question <span id="qNumber"></span>/10</h2>  
-    <p id="questionText"></p>  
-    <div id="optionsContainer"></div>  
-    <h3>Score: <span id="score">0</span></h3>  
-  </div>  
-</div>  <script>  
-  
-const canvas=document.getElementById('matrix');  
-const ctx=canvas.getContext('2d');  
-let w,h;  
-function resizeCanvas(){ w=canvas.width=window.innerWidth; h=canvas.height=window.innerHeight; }  
-window.addEventListener('resize',resizeCanvas);  
-resizeCanvas();  
-  
-const cols=Math.floor(w/20)+1;  
-const ypos=Array(cols).fill(0);  
-  
-function matrixLoop(){  
-  ctx.fillStyle='rgba(0,0,0,0.05)';  
-  ctx.fillRect(0,0,w,h);  
-  ctx.fillStyle='#0f0';  
-  ctx.font='15px monospace';  
-  for(let i=0;i<cols;i++){  
-    const text=String.fromCharCode(0x30A0 + Math.random()*96);  
-    ctx.fillText(text,i*20,ypos[i]*20);  
-    if(ypos[i]*20>h && Math.random()>0.975) ypos[i]=0;  
-    ypos[i]++;  
-  }  
-  requestAnimationFrame(matrixLoop);  
-}  
-matrixLoop();  
-  
-  
-function showScreen(id){ document.querySelectorAll('.screen').forEach(s=>s.style.display='none'); document.getElementById(id).style.display='flex'; }  
-  
-  
-setTimeout(()=>showScreen('homeScreen'),3000);  
-  
-  
-function startQuiz(){   
-  showScreen('quizScreen');   
-  initQuiz();  
-}  
-function showInstructions(){  
-  alert("Answer 10 random questions about web development (HTML, CSS, JS). Click an option to answer. Score increases for correct answers.");  
-}  
-  
-  
-const questions = [  
-  { q:"HTML stands for?", options:["Hyper Text Markup Language","Home Tool Markup Language","Hyperlinks Text Mark Language","Hyperlinking Text Markup Language"], answer:0 },  
-  { q:"Which HTML tag is used for a line break?", options:["<br>","<break>","<lb>","<line>"], answer:0 },  
-  { q:"CSS stands for?", options:["Cascading Style Sheets","Computer Style Sheets","Creative Style Syntax","Colorful Style Sheets"], answer:0 },  
-  { q:"Which property changes text color in CSS?", options:["color","font-color","text-color","fgcolor"], answer:0 },  
-  { q:"JavaScript is used for?", options:["Making web pages interactive","Styling web pages","Structuring content","Database management"], answer:0 },  
-  { q:"Which symbol is used for comments in JS?", options:["//","/* */","#","<!-- -->"], answer:0 },  
-  { q:"How to include an external CSS file?", options:["<link rel='stylesheet' href='style.css'>","<script src='style.css'>","<css src='style.css'>","<style src='style.css'>"], answer:0 },  
-  { q:"Which method prints messages to the console in JS?", options:["console.log()","print()","alert()","document.write()"], answer:0 },  
-  { q:"The correct HTML element for the largest heading is?", options:["<h1>","<h6>","<head>","<header>"], answer:0 },  
-  { q:"Which CSS property controls layout?", options:["display","layout","positioning","flow"], answer:0 }  
-];  
-  
-  
-let shuffledQuestions=[], currentQ=0, score=0;  
-  
-function initQuiz(){  
-  shuffledQuestions = questions.sort(()=>0.5-Math.random()).slice(0,10);  
-  currentQ=0;  
-  score=0;  
-  showQuestion();  
-}  
-  
-function showQuestion(){  
-  const qObj = shuffledQuestions[currentQ];  
-  document.getElementById('qNumber').textContent=currentQ+1;  
+    .hud-btn:hover {
+      background: rgba(0, 255, 102, 0.2);
+      border-color: var(--neon-green);
+      box-shadow: 0 0 10px var(--neon-green-glow);
+      transform: translateY(-1px);
+    }
+
+    /* Screen Wrapper */
+    .app-container {
+      position: relative;
+      z-index: 5;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 70px 16px 24px;
+    }
+
+    .screen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 840px;
+      animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .screen.active {
+      display: flex;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* Cyber Card Container */
+    .cyber-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 32px;
+      width: 100%;
+      box-shadow: 0 0 30px rgba(0, 0, 0, 0.9), 0 0 15px rgba(0, 255, 102, 0.15);
+      backdrop-filter: blur(12px);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Decorative sci-fi corners */
+    .cyber-card::before, .cyber-card::after {
+      content: "";
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      pointer-events: none;
+    }
+    .cyber-card::before {
+      top: 0;
+      left: 0;
+      border-top: 2px solid var(--neon-green);
+      border-left: 2px solid var(--neon-green);
+    }
+    .cyber-card::after {
+      bottom: 0;
+      right: 0;
+      border-bottom: 2px solid var(--neon-green);
+      border-right: 2px solid var(--neon-green);
+    }
+
+    .card-corner-tr {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 14px;
+      height: 14px;
+      border-top: 2px solid var(--neon-green);
+      border-right: 2px solid var(--neon-green);
+    }
+
+    .card-corner-bl {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 14px;
+      height: 14px;
+      border-bottom: 2px solid var(--neon-green);
+      border-left: 2px solid var(--neon-green);
+    }
+
+    /* Loading Screen */
+    .boot-box {
+      text-align: left;
+      font-size: 13px;
+      color: var(--neon-green);
+      width: 100%;
+      max-width: 520px;
+    }
+
+    .boot-header {
+      font-family: var(--font-display);
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--neon-cyan);
+      text-shadow: 0 0 10px var(--neon-cyan-glow);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .cyber-spinner {
+      width: 44px;
+      height: 44px;
+      border: 3px solid rgba(0, 255, 102, 0.15);
+      border-top: 3px solid var(--neon-green);
+      border-right: 3px solid var(--neon-cyan);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 20px auto;
+      box-shadow: 0 0 15px var(--neon-green-glow);
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .boot-log {
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(0, 255, 102, 0.2);
+      border-radius: 4px;
+      padding: 14px;
+      font-size: 12px;
+      line-height: 1.6;
+      color: #9fe2bf;
+      min-height: 110px;
+    }
+
+    /* Home Screen Styles */
+    .title-banner {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    .glitch-title {
+      font-family: var(--font-display);
+      font-size: 32px;
+      font-weight: 900;
+      letter-spacing: 3px;
+      color: #fff;
+      text-shadow: 0 0 10px var(--neon-green), 0 0 20px var(--neon-green-glow);
+      margin-bottom: 6px;
+      position: relative;
+    }
+
+    .subtitle-badge {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 2px;
+      color: var(--neon-cyan);
+      background: rgba(0, 243, 255, 0.08);
+      border: 1px solid rgba(0, 243, 255, 0.3);
+      padding: 3px 12px;
+      border-radius: 20px;
+      text-transform: uppercase;
+      box-shadow: 0 0 10px rgba(0, 243, 255, 0.2);
+    }
+
+    /* Configuration Panel in Home */
+    .config-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    @media (max-width: 640px) {
+      .config-grid { grid-template-columns: 1fr; }
+    }
+
+    .config-box {
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(0, 255, 102, 0.15);
+      border-radius: 6px;
+      padding: 14px;
+      text-align: left;
+    }
+
+    .config-label {
+      font-family: var(--font-display);
+      font-size: 11px;
+      color: var(--neon-cyan);
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .select-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .pill-opt {
+      background: rgba(0, 255, 102, 0.05);
+      border: 1px solid rgba(0, 255, 102, 0.25);
+      color: var(--text-dim);
+      font-size: 11px;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: var(--font-mono);
+    }
+
+    .pill-opt:hover {
+      border-color: var(--neon-green);
+      color: #fff;
+    }
+
+    .pill-opt.active {
+      background: rgba(0, 255, 102, 0.2);
+      border-color: var(--neon-green);
+      color: var(--neon-green);
+      box-shadow: 0 0 10px var(--neon-green-glow);
+      font-weight: 700;
+    }
+
+    /* Action Buttons */
+    .menu-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 10px;
+    }
+
+    .cyber-btn {
+      font-family: var(--font-display);
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: #000;
+      background: var(--neon-green);
+      border: 2px solid var(--neon-green);
+      padding: 14px 28px;
+      border-radius: 4px;
+      cursor: pointer;
+      box-shadow: 0 0 20px var(--neon-green-glow);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      text-transform: uppercase;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cyber-btn:hover {
+      background: #00ff88;
+      transform: translateY(-2px);
+      box-shadow: 0 0 30px var(--neon-green);
+    }
+
+    .cyber-btn:active {
+      transform: translateY(1px);
+    }
+
+    .cyber-btn-outline {
+      background: transparent;
+      color: var(--neon-green);
+      border: 1px solid var(--border-color);
+      box-shadow: none;
+    }
+
+    .cyber-btn-outline:hover {
+      background: rgba(0, 255, 102, 0.12);
+      border-color: var(--neon-green);
+      color: #fff;
+      box-shadow: 0 0 15px var(--neon-green-glow);
+    }
+
+    .btn-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    /* Quiz Gameplay Screen */
+    .quiz-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border-color);
+      margin-bottom: 18px;
+    }
+
+    .node-indicator {
+      font-family: var(--font-display);
+      font-size: 14px;
+      color: var(--neon-cyan);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      letter-spacing: 1px;
+    }
+
+    .category-badge {
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 3px;
+      background: rgba(0, 243, 255, 0.12);
+      border: 1px solid rgba(0, 243, 255, 0.4);
+      color: var(--neon-cyan);
+      text-transform: uppercase;
+    }
+
+    .stats-tracker {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .stat-pill {
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 4px 10px;
+      border-radius: 4px;
+      border: 1px solid rgba(0, 255, 102, 0.2);
+    }
+
+    .stat-pill.streak {
+      color: var(--neon-amber);
+      border-color: rgba(255, 183, 0, 0.4);
+    }
+
+    .lives-display {
+      color: var(--neon-red);
+      font-size: 14px;
+      letter-spacing: 2px;
+    }
+
+    /* Progress & Timer Bar */
+    .timer-wrap {
+      width: 100%;
+      height: 8px;
+      background: rgba(0, 0, 0, 0.6);
+      border: 1px solid rgba(0, 255, 102, 0.2);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 20px;
+      position: relative;
+    }
+
+    .timer-bar {
+      height: 100%;
+      width: 100%;
+      background: linear-gradient(90deg, var(--neon-green), var(--neon-cyan));
+      box-shadow: 0 0 10px var(--neon-green-glow);
+      transition: width 0.1s linear, background-color 0.3s;
+    }
+
+    .timer-bar.danger {
+      background: var(--neon-red);
+      box-shadow: 0 0 12px var(--neon-red);
+      animation: pulseDanger 0.4s infinite alternate;
+    }
+
+    @keyframes pulseDanger {
+      0% { opacity: 0.7; }
+      100% { opacity: 1; }
+    }
+
+    /* Question Terminal Area */
+    .question-box {
+      background: rgba(0, 0, 0, 0.45);
+      border: 1px solid rgba(0, 255, 102, 0.18);
+      border-radius: 6px;
+      padding: 22px;
+      margin-bottom: 24px;
+      text-align: left;
+    }
+
+    .terminal-prompt {
+      font-size: 11px;
+      color: var(--neon-cyan);
+      opacity: 0.8;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      letter-spacing: 1px;
+    }
+
+    .question-title {
+      font-size: 18px;
+      font-weight: 600;
+      line-height: 1.5;
+      color: #ffffff;
+      min-height: 54px;
+    }
+
+    /* Options Grid */
+    .options-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .option-btn {
+      background: rgba(0, 255, 102, 0.05);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 14px 18px;
+      color: #e0f8eb;
+      font-family: var(--font-mono);
+      font-size: 15px;
+      text-align: left;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+    }
+
+    .opt-key {
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 4px;
+      background: rgba(0, 255, 102, 0.1);
+      border: 1px solid rgba(0, 255, 102, 0.3);
+      color: var(--neon-green);
+      font-size: 12px;
+      font-weight: 700;
+      flex-shrink: 0;
+      transition: all 0.2s;
+    }
+
+    .opt-text {
+      flex: 1;
+      line-height: 1.4;
+      pointer-events: none;
+    }
+
+    .option-btn:hover:not([disabled]) {
+      background: rgba(0, 255, 102, 0.15);
+      border-color: var(--neon-green);
+      box-shadow: 0 0 15px var(--neon-green-glow);
+      transform: translateX(4px);
+      color: #ffffff;
+    }
+
+    .option-btn:hover:not([disabled]) .opt-key {
+      background: var(--neon-green);
+      color: #000;
+      box-shadow: 0 0 8px var(--neon-green);
+    }
+
+    /* Option Status States */
+    .option-btn.correct {
+      background: rgba(0, 255, 102, 0.25) !important;
+      border-color: var(--neon-green) !important;
+      box-shadow: 0 0 20px var(--neon-green-glow) !important;
+      color: #ffffff !important;
+    }
+
+    .option-btn.correct .opt-key {
+      background: var(--neon-green) !important;
+      color: #000 !important;
+    }
+
+    .option-btn.wrong {
+      background: rgba(255, 0, 85, 0.22) !important;
+      border-color: var(--neon-red) !important;
+      box-shadow: 0 0 20px var(--neon-red-glow) !important;
+      color: #ff99bb !important;
+      animation: shake 0.35s ease;
+    }
+
+    .option-btn.wrong .opt-key {
+      background: var(--neon-red) !important;
+      color: #fff !important;
+      border-color: var(--neon-red) !important;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-6px); }
+      40%, 80% { transform: translateX(6px); }
+    }
+
+    /* Explanation & Intel Banner */
+    .feedback-panel {
+      display: none;
+      background: rgba(0, 15, 10, 0.9);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 16px;
+      text-align: left;
+      animation: fadeIn 0.25s ease;
+      margin-top: 14px;
+    }
+
+    .feedback-status {
+      font-family: var(--font-display);
+      font-size: 13px;
+      letter-spacing: 1.5px;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .feedback-status.success { color: var(--neon-green); text-shadow: 0 0 8px var(--neon-green); }
+    .feedback-status.danger { color: var(--neon-red); text-shadow: 0 0 8px var(--neon-red); }
+
+    .feedback-explanation {
+      font-size: 13px;
+      line-height: 1.5;
+      color: #b0d8c0;
+      margin-bottom: 12px;
+    }
+
+    .next-btn-row {
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    /* Result / Debriefing Screen */
+    .result-banner {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .rank-tag {
+      display: inline-block;
+      font-family: var(--font-display);
+      font-size: 12px;
+      letter-spacing: 2px;
+      color: var(--neon-cyan);
+      background: rgba(0, 243, 255, 0.12);
+      border: 1px solid var(--neon-cyan);
+      padding: 4px 14px;
+      border-radius: 20px;
+      margin-bottom: 12px;
+      text-shadow: 0 0 6px var(--neon-cyan);
+    }
+
+    .rank-title {
+      font-family: var(--font-display);
+      font-size: 26px;
+      font-weight: 900;
+      letter-spacing: 2px;
+      color: #ffffff;
+      text-shadow: 0 0 15px var(--neon-green);
+      margin-bottom: 6px;
+    }
+
+    .stats-matrix {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin: 20px 0 28px;
+    }
+
+    @media (max-width: 600px) {
+      .stats-matrix { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    .stat-card {
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(0, 255, 102, 0.2);
+      border-radius: 6px;
+      padding: 12px;
+      text-align: center;
+    }
+
+    .stat-card-val {
+      font-family: var(--font-display);
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--neon-green);
+      text-shadow: 0 0 10px var(--neon-green-glow);
+      margin-bottom: 4px;
+    }
+
+    .stat-card-val.cyan { color: var(--neon-cyan); text-shadow: 0 0 10px var(--neon-cyan-glow); }
+    .stat-card-val.amber { color: var(--neon-amber); text-shadow: 0 0 10px rgba(255, 183, 0, 0.5); }
+
+    .stat-card-lbl {
+      font-size: 10px;
+      color: var(--text-dim);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    /* Modal Styling */
+    .cyber-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(8px);
+      z-index: 100;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .cyber-modal.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: #04140c;
+      border: 1px solid var(--neon-green);
+      border-radius: 8px;
+      max-width: 680px;
+      width: 100%;
+      max-height: 85vh;
+      overflow-y: auto;
+      padding: 28px;
+      box-shadow: 0 0 40px rgba(0, 255, 102, 0.2);
+      text-align: left;
+      position: relative;
+    }
+
+    .modal-title {
+      font-family: var(--font-display);
+      font-size: 18px;
+      color: var(--neon-cyan);
+      letter-spacing: 1.5px;
+      margin-bottom: 18px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(0, 255, 102, 0.25);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-body {
+      font-size: 13px;
+      line-height: 1.6;
+      color: #c7ebdb;
+    }
+
+    .modal-body h4 {
+      color: var(--neon-green);
+      font-size: 13px;
+      margin: 14px 0 6px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .modal-body ul {
+      padding-left: 20px;
+      margin-bottom: 12px;
+    }
+
+    .modal-body li {
+      margin-bottom: 6px;
+    }
+
+    .modal-close-btn {
+      background: none;
+      border: none;
+      color: var(--neon-red);
+      font-family: var(--font-mono);
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    /* Review list items */
+    .review-item {
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(0, 255, 102, 0.15);
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+
+    .review-q {
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+
+    .review-ans {
+      font-size: 12px;
+      margin-bottom: 4px;
+    }
+
+    .review-ans.user-correct { color: var(--neon-green); }
+    .review-ans.user-wrong { color: var(--neon-red); }
+    .review-ans.correct-key { color: var(--neon-cyan); }
+
+    .review-exp {
+      font-size: 11px;
+      color: #8bb39c;
+      font-style: italic;
+      margin-top: 6px;
+      padding-top: 6px;
+      border-top: 1px dashed rgba(0, 255, 102, 0.15);
+    }
+
+    /* Hall of Fame table */
+    .leaderboard-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-size: 12px;
+    }
+
+    .leaderboard-table th {
+      text-align: left;
+      padding: 8px;
+      color: var(--neon-cyan);
+      border-bottom: 1px solid rgba(0, 255, 102, 0.3);
+      font-family: var(--font-display);
+      font-size: 11px;
+    }
+
+    .leaderboard-table td {
+      padding: 8px;
+      border-bottom: 1px solid rgba(0, 255, 102, 0.1);
+      color: #d1f2e1;
+    }
+
+    /* Footer hints */
+    .footer-hints {
+      margin-top: 20px;
+      font-size: 11px;
+      color: var(--text-dim);
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .kbd-tag {
+      background: rgba(0, 255, 102, 0.1);
+      border: 1px solid rgba(0, 255, 102, 0.3);
+      padding: 1px 6px;
+      border-radius: 3px;
+      color: var(--neon-green);
+    }
+  </style>
+</head>
+<body>
+  <!-- Canvas Matrix Rain -->
+  <canvas id="matrix"></canvas>
+
+  <!-- CRT Monitor Scanlines -->
+  <div class="crt-overlay"></div>
+
+  <!-- Top Global HUD -->
+  <header class="hud-bar">
+    <div class="hud-brand">
+      <div class="hud-status-dot"></div>
+      <span>HACKNET://WEB_QUIZ_TERMINAL</span>
+    </div>
+    <div class="hud-controls">
+      <button id="btnAudioToggle" class="hud-btn" onclick="toggleAudio()" title="Tekan M untuk Mute/Unmute Audio">
+        <span id="audioIcon">🔊</span> <span id="audioText">AUDIO: ON</span>
+      </button>
+      <button id="btnCrtToggle" class="hud-btn" onclick="toggleCRT()" title="Tekan V untuk Toggle Efek CRT">
+        <span>📺</span> <span id="crtText">CRT: ON</span>
+      </button>
+      <button class="hud-btn" onclick="openHallOfFame()" title="Papan Skor Lokal">
+        <span>🏆</span> <span>SCORES</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="app-container">
+
+    <!-- SCREEN 1: BOOT / LOADING -->
+    <section id="loadingScreen" class="screen active">
+      <div class="cyber-card" style="max-width: 540px;">
+        <div class="card-corner-tr"></div>
+        <div class="card-corner-bl"></div>
+        <div class="boot-box">
+          <div class="boot-header">
+            <span>TERMINAL INITIALIZATION</span>
+          </div>
+          <div class="cyber-spinner"></div>
+          <div id="bootLog" class="boot-log">
+            &gt; [INIT] Loading neural network interface...<br>
+            &gt; [AUTH] Decrypting quiz question database...<br>
+            &gt; [NET] Connecting to cyber mainframe node...
+          </div>
+          <button id="btnSkipBoot" class="cyber-btn cyber-btn-outline" style="margin-top: 16px; width: 100%; font-size: 13px;" onclick="finishBoot()">
+            [ ENTER MAINFRAME ]
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCREEN 2: HOME / MISSION SETUP -->
+    <section id="homeScreen" class="screen">
+      <div class="cyber-card">
+        <div class="card-corner-tr"></div>
+        <div class="card-corner-bl"></div>
+
+        <div class="title-banner">
+          <span class="subtitle-badge">CYBER SECURITY &amp; CODE EXPEDITION v2.0</span>
+          <h1 class="glitch-title">WEB QUIZ GAME</h1>
+          <p style="color: var(--text-dim); font-size: 13px; margin-top: 4px;">
+            Uji pengetahuan web dev (HTML, CSS, JS, Security) dalam simulasi hacker terminal.
+          </p>
+        </div>
+
+        <!-- Configurations -->
+        <div class="config-grid">
+          <!-- Game Mode -->
+          <div class="config-box">
+            <div class="config-label">
+              <span>⚡</span> <span>PILIH MODE OPERASI:</span>
+            </div>
+            <div class="select-pills" id="modePills">
+              <button class="pill-opt active" data-mode="standard" onclick="selectMode('standard')">Standard (10 Soal)</button>
+              <button class="pill-opt" data-mode="blitz" onclick="selectMode('blitz')">Speedrun (15s Blitz)</button>
+              <button class="pill-opt" data-mode="survival" onclick="selectMode('survival')">Survival (3 Lives)</button>
+            </div>
+          </div>
+
+          <!-- Category -->
+          <div class="config-box">
+            <div class="config-label">
+              <span>📁</span> <span>SEKTOR PENGETAHUAN:</span>
+            </div>
+            <div class="select-pills" id="categoryPills">
+              <button class="pill-opt active" data-cat="all" onclick="selectCategory('all')">Semua Sektor (Mixed)</button>
+              <button class="pill-opt" data-cat="html-css" onclick="selectCategory('html-css')">HTML &amp; CSS</button>
+              <button class="pill-opt" data-cat="javascript" onclick="selectCategory('javascript')">JavaScript</button>
+              <button class="pill-opt" data-cat="security" onclick="selectCategory('security')">Web Security</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="menu-actions">
+          <button class="cyber-btn" onclick="startQuiz()">
+            <span>[ INITIATE HACK SEQUENCE ]</span>
+          </button>
+          <div class="btn-row">
+            <button class="cyber-btn cyber-btn-outline" onclick="openInstructions()">
+              [ PROTOCOL BRIEFING ]
+            </button>
+            <button class="cyber-btn cyber-btn-outline" onclick="openHallOfFame()">
+              [ LEADERBOARD / STATS ]
+            </button>
+          </div>
+        </div>
+
+        <div class="footer-hints">
+          <span>Shortcuts: <span class="kbd-tag">A</span> <span class="kbd-tag">B</span> <span class="kbd-tag">C</span> <span class="kbd-tag">D</span> / <span class="kbd-tag">1-4</span> Jawab</span>
+          <span><span class="kbd-tag">Space</span> Lanjut</span>
+          <span><span class="kbd-tag">Enter</span> Mulai/Ulang</span>
+          <span><span class="kbd-tag">M</span> Audio</span>
+          <span><span class="kbd-tag">V</span> CRT</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCREEN 3: QUIZ TERMINAL -->
+    <section id="quizScreen" class="screen">
+      <div class="cyber-card">
+        <div class="card-corner-tr"></div>
+        <div class="card-corner-bl"></div>
+
+        <!-- Quiz Top Header -->
+        <div class="quiz-header">
+          <div class="node-indicator">
+            <span id="nodeTag">NODE: 01/10</span>
+            <span id="categoryBadge" class="category-badge">HTML &amp; CSS</span>
+          </div>
+          <div class="stats-tracker">
+            <div id="livesBox" class="stat-pill" style="display: none;">
+              <span>❤️</span> <span id="livesText" class="lives-display">❤️❤️❤️</span>
+            </div>
+            <div id="streakBox" class="stat-pill streak">
+              <span>🔥</span> <span id="streakText">STREAK: 0</span>
+            </div>
+            <div class="stat-pill">
+              <span>💎</span> <span>SCORE: <strong id="scoreVal" style="color: #fff;">0</strong></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Countdown Bar -->
+        <div class="timer-wrap">
+          <div id="timerBar" class="timer-bar"></div>
+        </div>
+
+        <!-- Question Box -->
+        <div class="question-box">
+          <div class="terminal-prompt">
+            <span>root@hacknet:~#</span>
+            <span id="promptAction">decryption_node_packet</span>
+          </div>
+          <div id="questionTitle" class="question-title"></div>
+        </div>
+
+        <!-- Options Container -->
+        <div id="optionsGrid" class="options-grid"></div>
+
+        <!-- Feedback & Explanations Panel -->
+        <div id="feedbackPanel" class="feedback-panel">
+          <div id="feedbackStatus" class="feedback-status success">
+            <span id="feedbackTitle">ACCESS GRANTED (+100 PTS)</span>
+            <span id="feedbackTimerText" style="font-size: 11px; opacity: 0.8;">Tekan [SPACE] atau Klik Lanjut</span>
+          </div>
+          <div id="feedbackExplanation" class="feedback-explanation"></div>
+          <div class="next-btn-row">
+            <button id="btnNextQ" class="cyber-btn" style="padding: 8px 18px; font-size: 13px;" onclick="nextQuestion()">
+              [ NEXT NODE &gt;&gt; ]
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- SCREEN 4: MISSION REPORT (DEBRIEFING) -->
+    <section id="resultScreen" class="screen">
+      <div class="cyber-card">
+        <div class="card-corner-tr"></div>
+        <div class="card-corner-bl"></div>
+
+        <div class="result-banner">
+          <div id="missionOutcomeTag" class="rank-tag">MISSION COMPLETED</div>
+          <h2 id="hackerTitle" class="rank-title">CYBER ARCHITECT</h2>
+          <p id="rankSubtitle" style="color: var(--text-dim); font-size: 13px;"></p>
+        </div>
+
+        <!-- Detailed Stats Matrix -->
+        <div class="stats-matrix">
+          <div class="stat-card">
+            <div id="finalScoreVal" class="stat-card-val">0</div>
+            <div class="stat-card-lbl">Total Score</div>
+          </div>
+          <div class="stat-card">
+            <div id="accuracyVal" class="stat-card-val cyan">0%</div>
+            <div class="stat-card-lbl">Accuracy</div>
+          </div>
+          <div class="stat-card">
+            <div id="correctRatioVal" class="stat-card-val">0/10</div>
+            <div class="stat-card-lbl">Correct Answers</div>
+          </div>
+          <div class="stat-card">
+            <div id="maxStreakVal" class="stat-card-val amber">0</div>
+            <div class="stat-card-lbl">Max Streak</div>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="menu-actions">
+          <button class="cyber-btn" onclick="startQuiz()">
+            <span>[ RE-ATTEMPT HACK SEQUENCE ]</span>
+          </button>
+          <div class="btn-row">
+            <button class="cyber-btn cyber-btn-outline" onclick="openReviewModal()">
+              [ REVIEW ANSWERS &amp; INTEL ]
+            </button>
+            <button class="cyber-btn cyber-btn-outline" onclick="showScreen('homeScreen')">
+              [ RETURN TO MAINFRAME ]
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODAL: BRIEFING (INSTRUCTIONS) -->
+  <div id="modalInstructions" class="cyber-modal">
+    <div class="modal-content">
+      <div class="modal-title">
+        <span>&gt; MISSION_PROTOCOL_BRIEFING.DOC</span>
+        <button class="modal-close-btn" onclick="closeModal('modalInstructions')">[X]</button>
+      </div>
+      <div class="modal-body">
+        <h4>Tujuan Simulasi:</h4>
+        <p>Anda berperan sebagai ethical hacker / cyber pentester yang harus memecahkan tantangan kode web untuk menyusup ke node server musuh.</p>
+        
+        <h4>Mekanisme &amp; Aturan:</h4>
+        <ul>
+          <li><strong>Poin &amp; Waktu:</strong> Setiap jawaban benar memberikan <strong>100 Poin Dasar</strong> ditambah <strong>Bonus Sisa Waktu</strong> hingga +50 poin.</li>
+          <li><strong>Combo Streak:</strong> Menjawab benar secara berturut-turut melipatgandakan poin combo (hingga <strong>2.0x Multiplier</strong>).</li>
+          <li><strong>Pilihan Mode:</strong>
+            <ul>
+              <li><em>Standard:</em> 10 pertanyaan seimbang, 20 detik per soal.</li>
+              <li><em>Speedrun:</em> 15 detik per soal untuk tes refleks cepat.</li>
+              <li><em>Survival:</em> Menguji ketahanan dengan 3 nyawa. Salah/Timeout = -1 nyawa! Bertahanlah melintasi node sebanyak mungkin.</li>
+            </ul>
+          </li>
+          <li><strong>Hotkeys:</strong> Gunakan keyboard <span class="kbd-tag">A</span> <span class="kbd-tag">B</span> <span class="kbd-tag">C</span> <span class="kbd-tag">D</span> atau <span class="kbd-tag">1</span> <span class="kbd-tag">2</span> <span class="kbd-tag">3</span> <span class="kbd-tag">4</span> untuk menjawab super cepat. Tekan <span class="kbd-tag">Space</span> untuk melaju ke soal berikutnya, <span class="kbd-tag">Enter</span> untuk mulai/ulang, <span class="kbd-tag">M</span> untuk audio, dan <span class="kbd-tag">V</span> untuk efek CRT.</li>
+        </ul>
+
+        <h4>Evaluasi &amp; Gelar:</h4>
+        <p>Di akhir misi, Anda akan dievaluasi dan menerima Cyber Rank mulai dari <em>Script Kiddie</em> hingga <em>The One // Cyber Architect</em>.</p>
+      </div>
+      <button class="cyber-btn" style="margin-top: 20px; width: 100%; font-size: 13px;" onclick="closeModal('modalInstructions')">
+        [ MENGERTI // TUTUP BRIEFING ]
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL: HALL OF FAME / HIGH SCORES -->
+  <div id="modalLeaderboard" class="cyber-modal">
+    <div class="modal-content">
+      <div class="modal-title">
+        <span>&gt; MAINFRAME_HALL_OF_FAME.LOG</span>
+        <button class="modal-close-btn" onclick="closeModal('modalLeaderboard')">[X]</button>
+      </div>
+      <div class="modal-body">
+        <p>Catatan rekor peretasan lokal (tersimpan di browser Anda):</p>
+        <div id="leaderboardList" style="margin-top: 12px;"></div>
+      </div>
+      <div style="display: flex; gap: 10px; margin-top: 20px;">
+        <button class="cyber-btn cyber-btn-outline" style="flex: 1; font-size: 12px; color: var(--neon-red); border-color: rgba(255,0,85,0.4);" onclick="clearHighScores()">
+          [ RESET REKOR ]
+        </button>
+        <button class="cyber-btn" style="flex: 2; font-size: 12px;" onclick="closeModal('modalLeaderboard')">
+          [ KEMBALI ]
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: REVIEW ANSWERS -->
+  <div id="modalReview" class="cyber-modal">
+    <div class="modal-content">
+      <div class="modal-title">
+        <span>&gt; EXPLOIT_REVIEW_ANALYSIS.DAT</span>
+        <button class="modal-close-btn" onclick="closeModal('modalReview')">[X]</button>
+      </div>
+      <div class="modal-body">
+        <p style="margin-bottom: 12px;">Tinjau kembali log jawaban Anda dan penjelasan teknis:</p>
+        <div id="reviewContainer"></div>
+      </div>
+      <button class="cyber-btn" style="margin-top: 16px; width: 100%; font-size: 13px;" onclick="closeModal('modalReview')">
+        [ SELESAI MENINJAU ]
+      </button>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT LOGIC ENGINE -->
+  <script>
+    /* ========================================================
+       1. WEB AUDIO API SYNTHESIZER ENGINE (ZERO DEPENDENCIES)
+       ======================================================== */
+    let audioCtx = null;
+    let isMuted = false;
+
+    // Load initial audio & CRT preferences from localStorage
+    if (localStorage.getItem('webquiz_muted') === 'true') {
+      isMuted = true;
+    }
+    if (localStorage.getItem('webquiz_crt') === 'false') {
+      document.body.classList.add('crt-off');
+    }
+
+    function initAudio() {
+      if (!audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (AudioContext) {
+          audioCtx = new AudioContext();
+        }
+      }
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    function playTone(freq, type = 'sine', duration = 0.1, gainVal = 0.1) {
+      if (isMuted || !audioCtx) return;
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+
+        gain.gain.setValueAtTime(gainVal, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch (e) {
+        // Fallback for audio exceptions
+      }
+    }
+
+    // Sound effects
+    function sfxClick() {
+      initAudio();
+      playTone(900, 'square', 0.04, 0.05);
+    }
+
+    function sfxCorrect() {
+      initAudio();
+      if (isMuted || !audioCtx) return;
+      const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6 arpeggio
+      notes.forEach((freq, idx) => {
+        setTimeout(() => playTone(freq, 'sine', 0.12, 0.08), idx * 55);
+      });
+    }
+
+    function sfxWrong() {
+      initAudio();
+      if (isMuted || !audioCtx) return;
+      playTone(180, 'sawtooth', 0.18, 0.15);
+      setTimeout(() => playTone(120, 'sawtooth', 0.22, 0.15), 90);
+    }
+
+    function sfxTick() {
+      initAudio();
+      playTone(1200, 'triangle', 0.03, 0.03);
+    }
+
+    function sfxVictory() {
+      initAudio();
+      if (isMuted || !audioCtx) return;
+      const melody = [523.25, 659.25, 783.99, 1046.50, 1318.51];
+      melody.forEach((freq, idx) => {
+        setTimeout(() => playTone(freq, 'triangle', 0.25, 0.1), idx * 90);
+      });
+    }
+
+    function sfxDefeat() {
+      initAudio();
+      if (isMuted || !audioCtx) return;
+      const tones = [350, 300, 240, 180];
+      tones.forEach((freq, idx) => {
+        setTimeout(() => playTone(freq, 'sawtooth', 0.2, 0.12), idx * 110);
+      });
+    }
+
+    function toggleAudio() {
+      initAudio();
+      isMuted = !isMuted;
+      localStorage.setItem('webquiz_muted', isMuted);
+      updateAudioBtnUI();
+      if (!isMuted) sfxClick();
+    }
+
+    function updateAudioBtnUI() {
+      const icon = document.getElementById('audioIcon');
+      const text = document.getElementById('audioText');
+      if (isMuted) {
+        icon.textContent = '🔇';
+        text.textContent = 'AUDIO: MUTED';
+      } else {
+        icon.textContent = '🔊';
+        text.textContent = 'AUDIO: ON';
+      }
+    }
+
+    function toggleCRT() {
+      sfxClick();
+      document.body.classList.toggle('crt-off');
+      const isOn = !document.body.classList.contains('crt-off');
+      localStorage.setItem('webquiz_crt', isOn);
+      document.getElementById('crtText').textContent = isOn ? 'CRT: ON' : 'CRT: OFF';
+    }
+
+    function updateCrtBtnUI() {
+      const isOn = !document.body.classList.contains('crt-off');
+      document.getElementById('crtText').textContent = isOn ? 'CRT: ON' : 'CRT: OFF';
+    }
+
+    /* ========================================================
+       2. MATRIX RAIN EFFECT CANVAS (GLOWING LEAD STREAM)
+       ======================================================== */
+    const canvas = document.getElementById('matrix');
+    const ctx = canvas.getContext('2d');
+    let width, height, columns, drops;
+    const matrixChars = '0123456789ABCDEF$#@%&*<>/[]{}+=~ｦｱｳｴｵｶｷｹｺｻｼｽｾｿﾀﾂﾃﾅﾆﾇﾈﾊﾋﾎﾏﾐﾑﾒﾓﾔﾕﾗﾘﾜ';
+
+    function initMatrix() {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+      const fontSize = 16;
+      columns = Math.floor(width / fontSize) + 1;
+      drops = [];
+      for (let i = 0; i < columns; i++) {
+        drops[i] = Math.random() * -100; // staggered start
+      }
+    }
+
+    window.addEventListener('resize', initMatrix);
+    initMatrix();
+
+    function drawMatrix() {
+      ctx.fillStyle = 'rgba(3, 8, 6, 0.09)';
+      ctx.fillRect(0, 0, width, height);
+
+      const fontSize = 16;
+      ctx.font = `${fontSize}px monospace`;
+
+      for (let i = 0; i < drops.length; i++) {
+        const char = matrixChars[Math.floor(Math.random() * matrixChars.length)];
+        const x = i * fontSize;
+        const y = drops[i] * fontSize;
+
+        // Glowing bright green/white leading character
+        ctx.fillStyle = '#b8ffc9';
+        ctx.shadowColor = '#00ff66';
+        ctx.shadowBlur = 6;
+        ctx.fillText(char, x, y);
+
+        if (y > height && Math.random() > 0.975) {
+          drops[i] = 0;
+        }
+        drops[i]++;
+      }
+      ctx.shadowBlur = 0;
+      requestAnimationFrame(drawMatrix);
+    }
+    requestAnimationFrame(drawMatrix);
+
+    /* ========================================================
+       3. EXPANDED QUESTION BANK (42 RICH & VERIFIED QUESTIONS)
+       ======================================================== */
+    const questionBank = [
+      // --- HTML & CSS ---
+      {
+        q: "Apa kepanjangan resmi dari HTML?",
+        options: ["HyperText Markup Language", "Hyperlinks Text Mark Language", "Home Tool Markup Language", "Hyperlinking Text Management Language"],
+        answer: 0,
+        category: "html-css",
+        explanation: "HTML adalah singkatan dari HyperText Markup Language, bahasa standar untuk menstrukturkan halaman web."
+      },
+      {
+        q: "Elemen semantik HTML5 mana yang paling tepat untuk konten mandiri seperti artikel berita atau postingan blog?",
+        options: ["<article>", "<section>", "<div>", "<content>"],
+        answer: 0,
+        category: "html-css",
+        explanation: "<article> dirancang khusus untuk membungkus konten mandiri yang dapat didistribusikan secara independen."
+      },
+      {
+        q: "Di dalam CSS Box Model, area transparan yang memisahkan konten dari garis tepi (border) disebut?",
+        options: ["Padding", "Margin", "Outline", "Gap"],
+        answer: 0,
+        category: "html-css",
+        explanation: "Padding adalah ruang antara konten elemen dan bordernya. Margin adalah jarak luar di sekeliling border."
+      },
+      {
+        q: "Nilai properti CSS 'display' manakah yang menyediakan sistem tata letak grid dua dimensi (baris & kolom)?",
+        options: ["grid", "flex", "table-cell", "inline-block"],
+        answer: 0,
+        category: "html-css",
+        explanation: "CSS Grid dirancang untuk tata letak 2 dimensi (baris dan kolom), sedangkan Flexbox utamanya berfokus pada 1 dimensi."
+      },
+      {
+        q: "Urutan bobot spesifisitas (specificity) CSS dari yang terendah ke tertinggi adalah?",
+        options: ["Tag Selector < Class < ID < Inline Style", "ID < Class < Tag Selector < Inline Style", "Class < Tag Selector < ID < Inline Style", "Inline Style < ID < Class < Tag Selector"],
+        answer: 0,
+        category: "html-css",
+        explanation: "Elemen/tag bernilai 1, Class/Attribute/Pseudo-class bernilai 10, ID bernilai 100, dan Inline style bernilai 1000."
+      },
+      {
+        q: "Properti CSS manakah yang digunakan untuk mengatur urutan tumpukan (stacking order) pada elemen yang berposisi?",
+        options: ["z-index", "stack-level", "layer-index", "elevation"],
+        answer: 0,
+        category: "html-css",
+        explanation: "z-index menentukan urutan tumpukan elemen berposisi (relative, absolute, fixed, atau sticky)."
+      },
+      {
+        q: "Tag HTML mana yang digunakan untuk menghubungkan file CSS eksternal?",
+        options: ["<link rel='stylesheet' href='style.css'>", "<style src='style.css'>", "<script href='style.css'>", "<css link='style.css'>"],
+        answer: 0,
+        category: "html-css",
+        explanation: "Tag <link> dengan atribut rel='stylesheet' adalah standar HTML untuk menghubungkan stylesheet eksternal."
+      },
+      {
+        q: "Pseudo-class CSS manakah yang aktif ketika kursor pengguna berada di atas suatu elemen?",
+        options: [":hover", ":active", ":focus", ":visited"],
+        answer: 0,
+        category: "html-css",
+        explanation: ":hover diterapkan saat pengguna menunjuk elemen menggunakan perangkat penunjuk (seperti mouse cursor)."
+      },
+      {
+        q: "Atribut HTML mana yang digunakan untuk memberikan teks alternatif pada gambar?",
+        options: ["alt", "title", "srcset", "aria-hidden"],
+        answer: 0,
+        category: "html-css",
+        explanation: "Atribut alt menyediakan teks alternatif yang dapat dibaca screen reader dan ditampilkan jika gambar gagal dimuat."
+      },
+      {
+        q: "Selector CSS mana yang memilih elemen dengan id bernama 'header'?",
+        options: ["#header", ".header", "header()", "*header"],
+        answer: 0,
+        category: "html-css",
+        explanation: "Selector ID CSS diawali tanda #, sedangkan selector class diawali tanda titik (.) dan selector tag ditulis langsung."
+      },
+      {
+        q: "Properti CSS manakah yang digunakan untuk membuat animasi transisi antar nilai properti secara halus?",
+        options: ["transition", "transform", "keyframes", "motion-path"],
+        answer: 0,
+        category: "html-css",
+        explanation: "Properti transition memungkinkan perubahan nilai CSS terjadi secara bertahap dalam durasi waktu yang ditentukan."
+      },
+      {
+        q: "Tag semantik HTML5 manakah yang tepat untuk mengelompokkan tautan navigasi utama situs web?",
+        options: ["<nav>", "<menu>", "<header>", "<links>"],
+        answer: 0,
+        category: "html-css",
+        explanation: "Tag <nav> merepresentasikan bagian halaman yang memuat tautan navigasi utama ke bagian atau halaman lain."
+      },
+      {
+        q: "Satuan CSS manakah yang ukurannya relatif terhadap ukuran font dari elemen root (<html>)?",
+        options: ["rem", "em", "vh", "ch"],
+        answer: 0,
+        category: "html-css",
+        explanation: "rem (root em) selalu berpatokan pada font-size elemen root (html), sedangkan em berpatokan pada elemen induk terdekat."
+      },
+      {
+        q: "Properti Flexbox manakah yang mengatur perataan item di sepanjang sumbu utama (main axis)?",
+        options: ["justify-content", "align-items", "align-content", "flex-direction"],
+        answer: 0,
+        category: "html-css",
+        explanation: "justify-content mengatur perataan dan distribusi sisa ruang flex item di sepanjang sumbu utama (main axis)."
+      },
+
+      // --- JAVASCRIPT ---
+      {
+        q: "Keyword JavaScript manakah yang mendeklarasikan variabel dengan block scope yang nilainya tidak dapat di-reassign?",
+        options: ["const", "let", "var", "immutable"],
+        answer: 0,
+        category: "javascript",
+        explanation: "'const' mengikat variabel secara block-scoped dan mencegah reassignment identifier tersebut."
+      },
+      {
+        q: "Apa output dari `typeof null` dalam JavaScript akibat kebiasaan lama (historical bug) bahasa tersebut?",
+        options: ["'object'", "'null'", "'undefined'", "'primitive'"],
+        answer: 0,
+        category: "javascript",
+        explanation: "Dalam JavaScript versi awal, nilai null direpresentasikan sebagai type tag 0 yang serupa dengan objek, sehingga typeof null menghasilkan 'object'."
+      },
+      {
+        q: "Apa hasil dari ekspresi: `1 + '2' + 3` dalam JavaScript?",
+        options: ["'123'", "6", "NaN", "'33'"],
+        answer: 0,
+        category: "javascript",
+        explanation: "Karena salah satu operand bertipe string, operator '+' memicu koersi string berturut-turut: (1 + '2') -> '12', lalu ('12' + 3) -> '123'."
+      },
+      {
+        q: "Method array bawaan manakah yang menghasilkan array baru yang hanya berisi elemen lolos uji kondisi?",
+        options: ["filter()", "map()", "reduce()", "forEach()"],
+        answer: 0,
+        category: "javascript",
+        explanation: "Array.prototype.filter() menyaring elemen berdasarkan fungsi predikat yang mengembalikan nilai truthy."
+      },
+      {
+        q: "Mekanisme apa yang mengatur eksekusi kode asynchronous dan callback queue dalam JavaScript single-threaded?",
+        options: ["Event Loop", "Thread Worker Manager", "Call Stack Multiplier", "Async Concurrency Gate"],
+        answer: 0,
+        category: "javascript",
+        explanation: "Event Loop memantau Call Stack dan Task Queue. Jika stack kosong, ia memindahkan callback dari task queue ke stack."
+      },
+      {
+        q: "Dalam JavaScript, apa yang dimaksud dengan konsep Closure?",
+        options: ["Fungsi yang mengingat variabel dari lexical scope luar saat fungsi dibuat", "Fungsi yang otomatis tertutup dan tidak bisa dieksekusi lagi", "Metode untuk mematikan event listener secara permanen", "Proses menghentikan loop tak berhingga secara otomatis"],
+        answer: 0,
+        category: "javascript",
+        explanation: "Closure adalah kombinasi antara sebuah fungsi dan lingkungan leksikal (lexical environment) tempat fungsi tersebut dideklarasikan."
+      },
+      {
+        q: "Perbedaan utama antara operator '==' dan '===' dalam JavaScript adalah?",
+        options: ["'===' memeriksa kesetaraan nilai dan tipe data tanpa konversi tipe otomatis", "'==' memeriksa tipe data sedangkan '===' tidak", "'===' hanya berlaku untuk angka", "Tidak ada perbedaan, keduanya identik"],
+        answer: 0,
+        category: "javascript",
+        explanation: "'===' (strict equality) tidak melakukan type coercion, sehingga '5' === 5 bernilai false, sedangkan '5' == 5 bernilai true."
+      },
+      {
+        q: "Bagaimana cara mengubah objek JavaScript menjadi string format JSON?",
+        options: ["JSON.stringify(obj)", "JSON.parse(obj)", "obj.toJSONString()", "JSON.serialize(obj)"],
+        answer: 0,
+        category: "javascript",
+        explanation: "JSON.stringify() mengubah nilai atau objek JavaScript menjadi representasi teks JSON yang valid."
+      },
+      {
+        q: "Event JavaScript mana yang umum digunakan untuk menangani klik pada sebuah tombol?",
+        options: ["click", "hover", "submitter", "changeText"],
+        answer: 0,
+        category: "javascript",
+        explanation: "Event click berjalan ketika pengguna menekan dan melepaskan tombol pointer atau menekan enter/space pada elemen fokus."
+      },
+      {
+        q: "Operator mana yang mengembalikan nilai fallback hanya ketika nilai di sisi kiri null atau undefined?",
+        options: ["??", "||", "&&", "==="],
+        answer: 0,
+        category: "javascript",
+        explanation: "Nullish coalescing (??) mengembalikan nilai kanan hanya jika kiri null atau undefined; berbeda dari || yang juga menganggap 0 dan string kosong sebagai falsy."
+      },
+      {
+        q: "Method Array manakah yang menguji apakah setidaknya SATU elemen dalam array memenuhi kondisi predikat?",
+        options: ["some()", "every()", "find()", "includes()"],
+        answer: 0,
+        category: "javascript",
+        explanation: "Array.prototype.some() mengembalikan true jika fungsi callback menghasilkan nilai truthy untuk minimal 1 elemen array."
+      },
+      {
+        q: "Tipe data primitif apa yang diperkenalkan di ES2020 untuk menangani bilangan bulat melampaui batas Number.MAX_SAFE_INTEGER?",
+        options: ["BigInt", "LongInt", "Decimal", "LargeNumber"],
+        answer: 0,
+        category: "javascript",
+        explanation: "BigInt memungkinkan kalkulasi bilangan bulat berukuran sembarang tanpa batasan floating-point 64-bit IEEE 754."
+      },
+      {
+        q: "Method manakah yang digunakan untuk membekukan objek JavaScript secara penuh agar nilainya tidak bisa diubah, ditambah, maupun dihapus?",
+        options: ["Object.freeze()", "Object.seal()", "Object.lock()", "Object.preventExtensions()"],
+        answer: 0,
+        category: "javascript",
+        explanation: "Object.freeze() membuat objek menjadi immutable (tidak dapat dimutasi) pada level pertama propertinya."
+      },
+      {
+        q: "Method Promise manakah yang menunggu hingga SEMUA promise selesai (baik fulfilled maupun rejected)?",
+        options: ["Promise.allSettled()", "Promise.all()", "Promise.race()", "Promise.any()"],
+        answer: 0,
+        category: "javascript",
+        explanation: "Promise.allSettled() menunggu seluruh promise tuntas dan mengembalikan array berisi status dan hasil masing-masing promise."
+      },
+
+      // --- WEB SECURITY & TECH ---
+      {
+        q: "Protokol HTTPS mengenkripsi komunikasi data antara client dan server menggunakan protokol apa?",
+        options: ["TLS (Transport Layer Security)", "SSH (Secure Shell)", "FTP (File Transfer)", "AES Direct Socket"],
+        answer: 0,
+        category: "security",
+        explanation: "HTTPS beroperasi di atas protokol TLS (penerus SSL) untuk mengautentikasi server dan mengenkripsi seluruh pertukaran data."
+      },
+      {
+        q: "Mekanisme keamanan browser apa yang membatasi script dari suatu domain mengakses data pada origin yang berbeda?",
+        options: ["SOP (Same-Origin Policy) & CORS", "DNS Firewall Policy", "TCP Handshake Barrier", "Cookie Isolation Protocol"],
+        answer: 0,
+        category: "security",
+        explanation: "Same-Origin Policy (SOP) mencegah skrip pada satu origin mengakses resource sensitif pada origin lain tanpa izin header CORS."
+      },
+      {
+        q: "Jenis serangan keamanan web yang menyisipkan skrip berbahaya (biasanya JS) ke dalam halaman web yang dilihat korban disebut?",
+        options: ["XSS (Cross-Site Scripting)", "SQL Injection", "DDoS Attack", "Man-in-the-Middle"],
+        answer: 0,
+        category: "security",
+        explanation: "XSS terjadi saat aplikasi memasukkan data input pengguna tanpa sanitasi/escaping ke dalam output HTML/JS."
+      },
+      {
+        q: "Atribut cookie apa yang mencegah skrip JavaScript di browser membaca nilai cookie sesi, sehingga memitigasi pencurian cookie via XSS?",
+        options: ["HttpOnly", "Secure", "SameSite", "DomainOnly"],
+        answer: 0,
+        category: "security",
+        explanation: "Cookie dengan flag HttpOnly tidak dapat diakses melalui document.cookie di JavaScript, melindunginya dari pencurian skrip jahat."
+      },
+      {
+        q: "Kode status HTTP 403 melambangkan respon apa dari server?",
+        options: ["Forbidden (Akses ditolak)", "Not Found (Halaman tidak ditemukan)", "Unauthorized (Belum login)", "Internal Server Error"],
+        answer: 0,
+        category: "security",
+        explanation: "HTTP 403 Forbidden berarti server memahami permintaan client namun menolak untuk memenuhinya karena izin akses yang tidak cukup."
+      },
+      {
+        q: "Serangan yang memanfaatkan sesi login korban untuk mengeksekusi aksi tak diinginkan di situs web lain disebut?",
+        options: ["CSRF (Cross-Site Request Forgery)", "Buffer Overflow", "Phishing Trap", "Directory Traversal"],
+        answer: 0,
+        category: "security",
+        explanation: "CSRF memaksa browser pengguna yang terautentikasi untuk mengirimkan permintaan HTTP berbahaya ke aplikasi web target."
+      },
+      {
+        q: "Header HTTP apa yang digunakan untuk memberi tahu browser resource mana (script, css, image) yang diizinkan untuk dimuat?",
+        options: ["Content-Security-Policy (CSP)", "X-Permitted-Cross-Domain", "Strict-Transport-Security", "Access-Control-Allow-Origin"],
+        answer: 0,
+        category: "security",
+        explanation: "Content-Security-Policy (CSP) adalah lapisan pertahanan ampuh untuk mencegah eksekusi skrip XSS dan data injection."
+      },
+      {
+        q: "Mengapa password pengguna di database tidak boleh disimpan menggunakan hash cepat sederhana seperti MD5 atau SHA-1?",
+        options: ["Rentan terhadap tabel pelangi (Rainbow Tables) dan brute-force kecepatan tinggi", "MD5 menghabiskan terlalu banyak memori server", "Browser tidak mendukung enkripsi MD5", "Format MD5 terlalu panjang untuk disimpan"],
+        answer: 0,
+        category: "security",
+        explanation: "MD5/SHA1 dirancang cepat untuk checksum file, bukan password. Password harus memakai fungsi lambat berpenggaraman (salt) seperti bcrypt atau Argon2."
+      },
+      {
+        q: "Apa tujuan utama menggunakan parameterized query saat menjalankan SQL?",
+        options: ["Mengurangi risiko SQL Injection", "Mengenkripsi seluruh database otomatis", "Membuat password menjadi plaintext", "Menghapus kebutuhan autentikasi"],
+        answer: 0,
+        category: "security",
+        explanation: "Parameterized query memisahkan struktur perintah SQL dari data masukan, sehingga input tidak dapat ditafsirkan sebagai perintah berbahaya."
+      },
+      {
+        q: "Header keamanan HTTP mana yang membantu membatasi situs agar hanya dibuka dalam konteks HTTPS?",
+        options: ["Strict-Transport-Security (HSTS)", "Content-Length", "Accept-Language", "Cache-Control"],
+        answer: 0,
+        category: "security",
+        explanation: "HSTS (HTTP Strict Transport Security) memberi tahu browser untuk hanya menggunakan HTTPS saat mengakses situs tersebut."
+      },
+      {
+        q: "Header HTTP mana yang mencegah MIME-sniffing browser terhadap file yang dikirimkan?",
+        options: ["X-Content-Type-Options: nosniff", "X-Frame-Options: DENY", "Content-Security-Policy", "X-XSS-Protection: 1"],
+        answer: 0,
+        category: "security",
+        explanation: "Header 'X-Content-Type-Options: nosniff' memaksa browser mematuhi tipe MIME yang dideklarasikan server, mencegah eksekusi file berbahaya."
+      },
+      {
+        q: "Format token stateless berbasis tanda tangan kriptografis yang umum digunakan untuk otentikasi API web modern adalah?",
+        options: ["JWT (JSON Web Token)", "Session Cookies Plaintext", "Basic Auth Base64", "NTLM Hash Ticket"],
+        answer: 0,
+        category: "security",
+        explanation: "JWT adalah format token terkompak yang memuat klaim JSON terenkripsi/tertanda tangan (HMAC/RSA) untuk otorisasi stateless."
+      },
+      {
+        q: "Serangan yang membombardir server target dengan jutaan request palsu secara terdistribusi untuk melumpuhkan layanan disebut?",
+        options: ["DDoS (Distributed Denial of Service)", "Phishing", "Man-in-the-Middle", "Keylogging"],
+        answer: 0,
+        category: "security",
+        explanation: "DDoS memanfaatkan jaringan botnet terdistribusi untuk membanjiri kapasitas bandwidth atau CPU server hingga down."
+      },
+      {
+        q: "Nilai atribut 'SameSite' pada cookie manakah yang memberikan perlindungan terketat terhadap serangan CSRF?",
+        options: ["Strict", "Lax", "None", "Secure"],
+        answer: 0,
+        category: "security",
+        explanation: "SameSite=Strict memastikan cookie tidak pernah dikirimkan pada permintaan cross-site apapun, memberikan mitigasi CSRF maksimal."
+      }
+    ];
+
+    /* ========================================================
+       4. GAME STATE & VARIABLES
+       ======================================================== */
+    let currentMode = 'standard';     // 'standard', 'blitz', 'survival'
+    let currentCategory = 'all';      // 'all', 'html-css', 'javascript', 'security'
     
-  const questionText = document.getElementById('questionText');  
-  questionText.textContent='';  
-  typeText(qObj.q,questionText);  
-  
-  const optionsContainer = document.getElementById('optionsContainer');  
-  optionsContainer.innerHTML='';  
-  qObj.options.forEach((opt,i)=>{  
-    const btn = document.createElement('button');  
-    btn.className='option';  
-    btn.textContent=opt;  
-    btn.onclick=()=>checkAnswer(i);  
-    optionsContainer.appendChild(btn);  
-  });  
-}  
-  
-  
-function typeText(text,el){  
-  let i=0;  
-  const interval = setInterval(()=>{  
-    el.textContent+=text[i];  
-    i++;  
-    if(i>=text.length) clearInterval(interval);  
-  },20);  
-}  
-  
-function checkAnswer(selected){  
-  if(selected===shuffledQuestions[currentQ].answer){  
-    score+=10;  
-  
-    const scoreEl=document.getElementById('score');  
-    scoreEl.style.textShadow='0 0 20px #0f0,0 0 30px #0f0';  
-    setTimeout(()=>scoreEl.style.textShadow='0 0 5px #0f0,0 0 10px #0f0',300);  
-  }  
-  document.getElementById('score').textContent=score;  
-  currentQ++;  
-  if(currentQ<shuffledQuestions.length) showQuestion();  
-  else{ alert("Quiz finished! Your score: "+score); showScreen('homeScreen'); }  
-}  
-</script>  </body>  
+    let activeQuizPool = [];
+    let currentQIndex = 0;
+    let score = 0;
+    let streak = 0;
+    let maxStreak = 0;
+    let correctCount = 0;
+    let lives = 3;
+    let answeredInRound = false;
+    let reviewData = [];
+
+    // Timer variables
+    let timerDuration = 20; // seconds
+    let timeLeft = 20;
+    let timerInterval = null;
+    let startTime = null;
+
+    /* ========================================================
+       5. INITIALIZATION & SCREEN MANAGEMENT
+       ======================================================== */
+    updateAudioBtnUI();
+    updateCrtBtnUI();
+
+    function showScreen(screenId) {
+      clearInterval(timerInterval);
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      const target = document.getElementById(screenId);
+      if (target) {
+        target.classList.add('active');
+      }
+    }
+
+    // Boot screen typing simulation
+    let bootTimer = setTimeout(() => {
+      finishBoot();
+    }, 2400);
+
+    function finishBoot() {
+      clearTimeout(bootTimer);
+      sfxClick();
+      showScreen('homeScreen');
+    }
+
+    /* ========================================================
+       6. CONFIGURATION SELECTORS
+       ======================================================== */
+    function selectMode(mode) {
+      sfxClick();
+      currentMode = mode;
+      document.querySelectorAll('#modePills .pill-opt').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.mode === mode);
+      });
+    }
+
+    function selectCategory(cat) {
+      sfxClick();
+      currentCategory = cat;
+      document.querySelectorAll('#categoryPills .pill-opt').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.cat === cat);
+      });
+    }
+
+    /* ========================================================
+       7. UTILS: FISHER-YATES SHUFFLE ALGORITHM
+       ======================================================== */
+    function shuffleArray(arr) {
+      const copy = [...arr];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    // Helper to deeply prepare question items with randomized option positions
+    function prepareQuestionItem(orig) {
+      const originalCorrectText = orig.options[orig.answer];
+      const shuffledOpts = shuffleArray(orig.options);
+      const newCorrectIndex = shuffledOpts.indexOf(originalCorrectText);
+      return {
+        q: orig.q,
+        options: shuffledOpts,
+        answer: newCorrectIndex,
+        category: orig.category,
+        explanation: orig.explanation
+      };
+    }
+
+    /* ========================================================
+       8. QUIZ ENGINE LOGIC
+       ======================================================== */
+    function startQuiz() {
+      initAudio();
+      sfxClick();
+      clearInterval(timerInterval);
+
+      // Filter questions by selected category
+      let pool = questionBank;
+      if (currentCategory !== 'all') {
+        pool = questionBank.filter(q => q.category === currentCategory);
+      }
+
+      // Shuffle entire pool
+      pool = shuffleArray(pool);
+
+      // Deep clone each question so option shuffling doesn't mutate base questions
+      activeQuizPool = pool.map(prepareQuestionItem);
+
+      // Slice question count based on mode (Standard & Blitz = 10 questions)
+      if (currentMode === 'standard' || currentMode === 'blitz') {
+        activeQuizPool = activeQuizPool.slice(0, 10);
+      }
+
+      // Set timers
+      if (currentMode === 'blitz') {
+        timerDuration = 15;
+      } else {
+        timerDuration = 20;
+      }
+
+      // Reset gameplay stats
+      currentQIndex = 0;
+      score = 0;
+      streak = 0;
+      maxStreak = 0;
+      correctCount = 0;
+      lives = 3;
+      reviewData = [];
+      startTime = Date.now();
+
+      // UI HUD setups
+      const livesBox = document.getElementById('livesBox');
+      if (currentMode === 'survival') {
+        livesBox.style.display = 'flex';
+        updateLivesUI();
+      } else {
+        livesBox.style.display = 'none';
+      }
+
+      updateScoreUI();
+      showScreen('quizScreen');
+      loadQuestion();
+    }
+
+    function updateScoreUI() {
+      document.getElementById('scoreVal').textContent = score;
+      document.getElementById('streakText').textContent = `STREAK: ${streak}`;
+      const streakBox = document.getElementById('streakBox');
+      if (streak >= 3) {
+        streakBox.style.boxShadow = '0 0 15px rgba(255, 183, 0, 0.6)';
+        streakBox.style.color = '#ffdd44';
+      } else {
+        streakBox.style.boxShadow = 'none';
+        streakBox.style.color = 'var(--neon-amber)';
+      }
+    }
+
+    function updateLivesUI() {
+      let hearts = '';
+      for (let i = 0; i < lives; i++) hearts += '❤️';
+      document.getElementById('livesText').textContent = hearts || '💀 0';
+    }
+
+    function loadQuestion() {
+      // Check if questions are exhausted
+      if (currentQIndex >= activeQuizPool.length) {
+        if (currentMode === 'survival' && lives > 0 && activeQuizPool.length > 0) {
+          // Re-shuffle question order AND re-shuffle option orders for fresh challenge
+          let pool = questionBank;
+          if (currentCategory !== 'all') {
+            pool = questionBank.filter(q => q.category === currentCategory);
+          }
+          activeQuizPool = shuffleArray(pool).map(prepareQuestionItem);
+          currentQIndex = 0;
+        } else {
+          finishQuiz();
+          return;
+        }
+      }
+
+      answeredInRound = false;
+      const qData = activeQuizPool[currentQIndex];
+
+      // Update Node indicators (Survival displays continuous count across cycles)
+      const totalQ = currentMode === 'survival' ? '∞' : activeQuizPool.length;
+      const displayNodeNum = currentMode === 'survival' ? (reviewData.length + 1) : (currentQIndex + 1);
+      document.getElementById('nodeTag').textContent = `NODE: ${String(displayNodeNum).padStart(2, '0')}/${totalQ}`;
+      
+      const catNames = {
+        'html-css': 'HTML & CSS',
+        'javascript': 'JAVASCRIPT',
+        'security': 'WEB SECURITY',
+        'all': 'MIXED SECTOR'
+      };
+      document.getElementById('categoryBadge').textContent = catNames[qData.category] || 'CORE TECH';
+
+      // Question Title (safe textContent avoids HTML injection/disappearing tags)
+      document.getElementById('questionTitle').textContent = qData.q;
+      
+      // Hide Feedback panel
+      document.getElementById('feedbackPanel').style.display = 'none';
+
+      // Build Options with [A], [B], [C], [D] using safe DOM elements
+      const optionsGrid = document.getElementById('optionsGrid');
+      optionsGrid.replaceChildren();
+      const letters = ['A', 'B', 'C', 'D'];
+
+      qData.options.forEach((optText, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'option-btn';
+        btn.id = `optBtn_${idx}`;
+
+        const keySpan = document.createElement('span');
+        keySpan.className = 'opt-key';
+        keySpan.textContent = letters[idx];
+
+        const textSpan = document.createElement('span');
+        textSpan.className = 'opt-text';
+        textSpan.textContent = optText;
+
+        btn.append(keySpan, textSpan);
+        btn.onclick = () => handleAnswer(idx);
+        optionsGrid.appendChild(btn);
+      });
+
+      // Start Countdown Timer
+      startQuestionTimer();
+    }
+
+    function startQuestionTimer() {
+      clearInterval(timerInterval);
+      timeLeft = timerDuration;
+      const timerBar = document.getElementById('timerBar');
+      timerBar.classList.remove('danger');
+      timerBar.style.width = '100%';
+
+      const intervalStep = 100; // update every 100ms
+      const totalSteps = timerDuration * 10;
+      let currentStep = totalSteps;
+
+      timerInterval = setInterval(() => {
+        currentStep--;
+        const pct = (currentStep / totalSteps) * 100;
+        timerBar.style.width = `${Math.max(0, pct)}%`;
+
+        timeLeft = parseFloat((currentStep / 10).toFixed(1));
+
+        // Sound & warning below 5 seconds
+        if (currentStep <= 50) {
+          timerBar.classList.add('danger');
+          if (currentStep % 10 === 0) {
+            sfxTick();
+          }
+        }
+
+        if (currentStep <= 0) {
+          clearInterval(timerInterval);
+          handleTimeOut();
+        }
+      }, intervalStep);
+    }
+
+    function handleTimeOut() {
+      if (answeredInRound) return;
+      handleAnswer(-1); // -1 indicates timeout
+    }
+
+    function handleAnswer(selectedIndex) {
+      if (answeredInRound) return;
+      answeredInRound = true;
+      clearInterval(timerInterval);
+
+      const qData = activeQuizPool[currentQIndex];
+      const isCorrect = selectedIndex === qData.answer;
+      const optionsGrid = document.getElementById('optionsGrid');
+      const allButtons = optionsGrid.querySelectorAll('.option-btn');
+
+      // Disable buttons to prevent multi-clicks
+      allButtons.forEach(btn => btn.disabled = true);
+
+      // Record for debriefing review
+      reviewData.push({
+        question: qData.q,
+        options: qData.options,
+        userAnswer: selectedIndex,
+        correctAnswer: qData.answer,
+        isCorrect: isCorrect,
+        explanation: qData.explanation
+      });
+
+      const feedbackPanel = document.getElementById('feedbackPanel');
+      const feedbackStatus = document.getElementById('feedbackStatus');
+      const feedbackTitle = document.getElementById('feedbackTitle');
+      const feedbackExplanation = document.getElementById('feedbackExplanation');
+      const letters = ['A', 'B', 'C', 'D'];
+
+      if (isCorrect) {
+        sfxCorrect();
+        correctCount++;
+        streak++;
+        if (streak > maxStreak) maxStreak = streak;
+
+        // Scoring: 100 base + time bonus + streak multiplier
+        const timeBonus = Math.floor(Math.max(0, timeLeft) * 3);
+        const streakMultiplier = 1 + Math.min(1.0, (streak - 1) * 0.2); // max 2.0x
+        const roundPoints = Math.round((100 + timeBonus) * streakMultiplier);
+        score += roundPoints;
+
+        // Highlight chosen button green
+        if (selectedIndex >= 0 && selectedIndex < qData.options.length) {
+          const btn = document.getElementById(`optBtn_${selectedIndex}`);
+          if (btn) btn.classList.add('correct');
+        }
+
+        feedbackStatus.className = 'feedback-status success';
+        feedbackTitle.textContent = `ACCESS GRANTED (+${roundPoints} PTS // STREAK x${streak})`;
+      } else {
+        sfxWrong();
+        streak = 0; // reset streak
+
+        if (currentMode === 'survival') {
+          lives--;
+          updateLivesUI();
+        }
+
+        // Highlight chosen button red
+        if (selectedIndex >= 0 && selectedIndex < qData.options.length) {
+          const btn = document.getElementById(`optBtn_${selectedIndex}`);
+          if (btn) btn.classList.add('wrong');
+        }
+
+        // Highlight correct button green
+        const correctBtn = document.getElementById(`optBtn_${qData.answer}`);
+        if (correctBtn) correctBtn.classList.add('correct');
+
+        feedbackStatus.className = 'feedback-status danger';
+        const failReason = selectedIndex === -1 ? 'TIMEOUT BREACH (0s)' : 'ACCESS DENIED';
+        feedbackTitle.textContent = `${failReason} // KUNCI: [${letters[qData.answer]}] ${qData.options[qData.answer]}`;
+      }
+
+      updateScoreUI();
+
+      // Show educational explanation safely using text nodes
+      feedbackExplanation.replaceChildren();
+      const reportLabel = document.createElement('strong');
+      reportLabel.textContent = 'INTEL REPORT: ';
+      feedbackExplanation.append(reportLabel, document.createTextNode(qData.explanation));
+      feedbackPanel.style.display = 'block';
+
+      // Check survival defeat
+      if (currentMode === 'survival' && lives <= 0) {
+        document.getElementById('btnNextQ').textContent = '[ LIHAT LAPORAN KEGAGALAN ]';
+      } else {
+        document.getElementById('btnNextQ').textContent = '[ NEXT NODE >> ]';
+      }
+    }
+
+    function nextQuestion() {
+      sfxClick();
+      // If survival ended
+      if (currentMode === 'survival' && lives <= 0) {
+        finishQuiz();
+        return;
+      }
+
+      currentQIndex++;
+      if (currentQIndex < activeQuizPool.length) {
+        loadQuestion();
+      } else if (currentMode === 'survival' && lives > 0) {
+        // Survival mode continues seamlessly with freshly prepared shuffled options
+        let pool = questionBank;
+        if (currentCategory !== 'all') {
+          pool = questionBank.filter(q => q.category === currentCategory);
+        }
+        activeQuizPool = shuffleArray(pool).map(prepareQuestionItem);
+        currentQIndex = 0;
+        loadQuestion();
+      } else {
+        finishQuiz();
+      }
+    }
+
+    /* ========================================================
+       9. MISSION DEBRIEFING & RESULT SCREEN
+       ======================================================== */
+    function finishQuiz() {
+      clearInterval(timerInterval);
+      showScreen('resultScreen');
+
+      const totalAttempted = reviewData.length;
+      const accuracy = totalAttempted > 0 ? Math.round((correctCount / totalAttempted) * 100) : 0;
+
+      document.getElementById('finalScoreVal').textContent = score;
+      document.getElementById('accuracyVal').textContent = `${accuracy}%`;
+      document.getElementById('correctRatioVal').textContent = `${correctCount}/${totalAttempted}`;
+      document.getElementById('maxStreakVal').textContent = maxStreak;
+
+      // Hacker Rank Calculation
+      const titleTag = document.getElementById('missionOutcomeTag');
+      const hackerTitle = document.getElementById('hackerTitle');
+      const subtitle = document.getElementById('rankSubtitle');
+
+      if (currentMode === 'survival' && lives <= 0) {
+        titleTag.textContent = 'SYSTEM BREACHED // CRITICAL FAILURE';
+        titleTag.style.color = 'var(--neon-red)';
+        titleTag.style.borderColor = 'var(--neon-red)';
+        hackerTitle.textContent = 'FIREWALL CASUALTY';
+        subtitle.textContent = `Semua nyawa terkuras setelah menembus ${totalAttempted} node. Pelajari intel dan coba lagi!`;
+        sfxDefeat();
+      } else if (accuracy >= 90) {
+        titleTag.textContent = 'SYSTEM ROOT ACCESS GRANTED';
+        titleTag.style.color = 'var(--neon-green)';
+        titleTag.style.borderColor = 'var(--neon-green)';
+        hackerTitle.textContent = 'THE ARCHITECT // NEO';
+        subtitle.textContent = 'Luar biasa! Pemahaman kode dan arsitektur web Anda berada di level Grandmaster.';
+        sfxVictory();
+      } else if (accuracy >= 75) {
+        titleTag.textContent = 'PENETRATION SUCCESSFUL';
+        titleTag.style.color = 'var(--neon-cyan)';
+        titleTag.style.borderColor = 'var(--neon-cyan)';
+        hackerTitle.textContent = 'ELITE PENTESTER';
+        subtitle.textContent = 'Performa gemilang! Hampir semua celah keamanan dan kode berhasil dieksploitasi.';
+        sfxVictory();
+      } else if (accuracy >= 50) {
+        titleTag.textContent = 'PARTIAL INFILTRATION';
+        titleTag.style.color = 'var(--neon-amber)';
+        titleTag.style.borderColor = 'var(--neon-amber)';
+        hackerTitle.textContent = 'CYBER RUNNER';
+        subtitle.textContent = 'Kemampuan dasar Anda solid, namun ada beberapa protokol tingkat lanjut yang perlu diasah.';
+        sfxVictory();
+      } else {
+        titleTag.textContent = 'INTRUSION DETECTED';
+        titleTag.style.color = 'var(--neon-red)';
+        titleTag.style.borderColor = 'var(--neon-red)';
+        hackerTitle.textContent = 'SCRIPT KIDDIE';
+        subtitle.textContent = 'Sistem pertahanan berhasil menahan Anda. Periksa exploit review untuk belajar.';
+        sfxDefeat();
+      }
+
+      // Save high score to localStorage safely
+      saveHighScore({
+        score: score,
+        accuracy: accuracy,
+        mode: currentMode,
+        rank: hackerTitle.textContent,
+        date: new Date().toLocaleDateString('id-ID')
+      });
+    }
+
+    /* ========================================================
+       10. LOCAL STORAGE LEADERBOARD / HIGH SCORES
+       ======================================================== */
+    function saveHighScore(entry) {
+      let records = [];
+      try {
+        const stored = localStorage.getItem('webquiz_leaderboard');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) records = parsed;
+        }
+      } catch (e) {
+        records = [];
+      }
+
+      records.push(entry);
+      // Sort by highest score descending
+      records.sort((a, b) => (b.score || 0) - (a.score || 0));
+      records = records.slice(0, 10); // keep top 10
+
+      try {
+        localStorage.setItem('webquiz_leaderboard', JSON.stringify(records));
+      } catch (e) {}
+    }
+
+    function openHallOfFame() {
+      sfxClick();
+      const listContainer = document.getElementById('leaderboardList');
+      listContainer.replaceChildren();
+
+      let records = [];
+      try {
+        const stored = localStorage.getItem('webquiz_leaderboard');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) records = parsed;
+        }
+      } catch (e) {
+        records = [];
+      }
+
+      if (records.length === 0) {
+        const emptyMsg = document.createElement('p');
+        emptyMsg.style.color = 'var(--text-dim)';
+        emptyMsg.style.fontStyle = 'italic';
+        emptyMsg.textContent = 'Belum ada catatan rekor. Selesaikan misi untuk mencatat rekor pertama Anda!';
+        listContainer.appendChild(emptyMsg);
+      } else {
+        const table = document.createElement('table');
+        table.className = 'leaderboard-table';
+
+        const thead = document.createElement('thead');
+        thead.innerHTML = `
+          <tr>
+            <th>#</th>
+            <th>RANK TITLE</th>
+            <th>MODE</th>
+            <th>ACCURACY</th>
+            <th>SCORE</th>
+          </tr>
+        `;
+        table.appendChild(thead);
+
+        const tbody = document.createElement('tbody');
+        records.forEach((r, idx) => {
+          const tr = document.createElement('td');
+          const row = document.createElement('tr');
+
+          const tdRank = document.createElement('td');
+          tdRank.style.color = 'var(--neon-cyan)';
+          tdRank.textContent = idx + 1;
+
+          const tdTitle = document.createElement('td');
+          tdTitle.style.fontWeight = '600';
+          tdTitle.textContent = r.rank || 'OPERATIVE';
+
+          const tdMode = document.createElement('td');
+          tdMode.style.textTransform = 'uppercase';
+          tdMode.textContent = r.mode || 'standard';
+
+          const tdAcc = document.createElement('td');
+          tdAcc.textContent = `${r.accuracy ?? 0}%`;
+
+          const tdScore = document.createElement('td');
+          tdScore.style.color = 'var(--neon-green)';
+          tdScore.style.fontWeight = '700';
+          tdScore.textContent = r.score ?? 0;
+
+          row.append(tdRank, tdTitle, tdMode, tdAcc, tdScore);
+          tbody.appendChild(row);
+        });
+
+        table.appendChild(tbody);
+        listContainer.appendChild(table);
+      }
+
+      document.getElementById('modalLeaderboard').classList.add('active');
+    }
+
+    function clearHighScores() {
+      if (confirm('Konfirmasi: Hapus seluruh catatan rekor Hall of Fame?')) {
+        try {
+          localStorage.removeItem('webquiz_leaderboard');
+        } catch (e) {}
+        openHallOfFame();
+      }
+    }
+
+    /* ========================================================
+       11. MODAL DIALOGS & REVIEW MODAL
+       ======================================================== */
+    function openInstructions() {
+      sfxClick();
+      document.getElementById('modalInstructions').classList.add('active');
+    }
+
+    function openReviewModal() {
+      sfxClick();
+      const container = document.getElementById('reviewContainer');
+      container.replaceChildren();
+      const letters = ['A', 'B', 'C', 'D'];
+
+      if (!Array.isArray(reviewData) || reviewData.length === 0) {
+        const emptyP = document.createElement('p');
+        emptyP.style.color = 'var(--text-dim)';
+        emptyP.style.fontStyle = 'italic';
+        emptyP.textContent = 'Belum ada catatan jawaban yang tersedia.';
+        container.appendChild(emptyP);
+      } else {
+        reviewData.forEach((item, index) => {
+          const div = document.createElement('div');
+          div.className = 'review-item';
+
+          const userChoiceText = item.userAnswer >= 0
+            ? `${letters[item.userAnswer]}: ${item.options[item.userAnswer]}`
+            : 'Tidak Menjawab (Timeout)';
+          const correctChoiceText = `${letters[item.correctAnswer]}: ${item.options[item.correctAnswer]}`;
+
+          const question = document.createElement('div');
+          question.className = 'review-q';
+          question.textContent = `${index + 1}. ${item.question}`;
+          div.appendChild(question);
+
+          const userAnswer = document.createElement('div');
+          userAnswer.className = `review-ans ${item.isCorrect ? 'user-correct' : 'user-wrong'}`;
+          userAnswer.textContent = `Jawaban Anda: ${userChoiceText} ${item.isCorrect ? '✔' : '✖'}`;
+          div.appendChild(userAnswer);
+
+          if (!item.isCorrect) {
+            const correctAnswer = document.createElement('div');
+            correctAnswer.className = 'review-ans correct-key';
+            correctAnswer.textContent = `Jawaban Benar: ${correctChoiceText}`;
+            div.appendChild(correctAnswer);
+          }
+
+          const explanation = document.createElement('div');
+          explanation.className = 'review-exp';
+          const intel = document.createElement('strong');
+          intel.textContent = 'Intel: ';
+          explanation.append(intel, document.createTextNode(item.explanation));
+          div.appendChild(explanation);
+
+          container.appendChild(div);
+        });
+      }
+
+      document.getElementById('modalReview').classList.add('active');
+    }
+
+    function closeModal(modalId) {
+      sfxClick();
+      const modal = document.getElementById(modalId);
+      if (modal) modal.classList.remove('active');
+    }
+
+    // Backdrop click listener to close modals when clicking dark overlay
+    document.querySelectorAll('.cyber-modal').forEach(modal => {
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          closeModal(modal.id);
+        }
+      });
+    });
+
+    /* ========================================================
+       12. KEYBOARD CONTROLS (HACKER TERMINAL HOTKEYS)
+       ======================================================== */
+    window.addEventListener('keydown', (e) => {
+      const activeModal = document.querySelector('.cyber-modal.active');
+      if (e.key === 'Escape') {
+        if (activeModal) activeModal.classList.remove('active');
+        return;
+      }
+
+      // Audio toggle with 'M'
+      if (e.key === 'm' || e.key === 'M') {
+        toggleAudio();
+        return;
+      }
+
+      // CRT toggle with 'V' (hotkey V leaves C available as answer option C)
+      if (e.key === 'v' || e.key === 'V') {
+        toggleCRT();
+        return;
+      }
+
+      // Quick start on Home Screen or Restart on Result Screen with Enter/Space
+      const homeActive = document.getElementById('homeScreen').classList.contains('active');
+      if (homeActive && !activeModal) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          startQuiz();
+          return;
+        }
+      }
+
+      const resultActive = document.getElementById('resultScreen').classList.contains('active');
+      if (resultActive && !activeModal) {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          startQuiz();
+          return;
+        }
+      }
+
+      // Quiz Answer shortcuts (A, B, C, D or 1, 2, 3, 4)
+      const quizActive = document.getElementById('quizScreen').classList.contains('active');
+      if (quizActive && !activeModal) {
+        if (!answeredInRound) {
+          const keyMap = {
+            'a': 0, 'A': 0, '1': 0,
+            'b': 1, 'B': 1, '2': 1,
+            'c': 2, 'C': 2, '3': 2,
+            'd': 3, 'D': 3, '4': 3
+          };
+          if (keyMap.hasOwnProperty(e.key)) {
+            const chosenIdx = keyMap[e.key];
+            const qData = activeQuizPool[currentQIndex];
+            if (qData && chosenIdx < qData.options.length) {
+              handleAnswer(chosenIdx);
+            }
+          }
+        } else {
+          // Space or Enter to advance to next question
+          if (e.key === ' ' || e.key === 'Enter') {
+            e.preventDefault();
+            nextQuestion();
+          }
+        }
+      }
+    });
+  </script>
+</body>
 </html>
